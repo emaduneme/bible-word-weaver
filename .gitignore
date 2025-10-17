@@ -1,0 +1,48 @@
+# Node modules
+node_modules/
+npm-debug.log
+package-lock.json
+yarn.lock
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# IDE and Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+
+# Build and dist
+dist/
+build/
+.cache/
+
+# OS files
+.DS_Store
+*.log
+logs/
+
+# Dependencies
+/node_modules
+
+# Production
+/build
+/dist
+
+# Vercel
+.vercel
+
+# Netlify
+.netlify
+
+# Local development
+.env.local
+.env.development.local

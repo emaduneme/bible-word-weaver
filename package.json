@@ -1,0 +1,31 @@
+{
+  "name": "bible-word-weaver",
+  "version": "1.0.0",
+  "description": "A biblical-themed word search puzzle game with 12 categories, daily limits, and smooth animations",
+  "main": "index.html",
+  "scripts": {
+    "start": "open index.html",
+    "deploy": "git push origin main"
+  },
+  "keywords": [
+    "word-search",
+    "puzzle-game",
+    "bible",
+    "biblical",
+    "word-game",
+    "interactive-game",
+    "web-game",
+    "faith"
+  ],
+  "author": "Emmanuel Maduneme",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/bible-word-weaver.git"
+  },
+  "homepage": "https://bible-word-weaver.vercel.app",
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "type": "module"
+}

@@ -1,0 +1,1322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Faith Word Search </title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --green: #6aaa64;
+            --darkgreen: #538d4e;
+            --yellow: #c9b458;
+            --darkyellow: #b59f3b;
+            --lightgray: #d8d8d8;
+            --gray: #86888a;
+            --darkgray: #939598;
+            --white: #fff;
+            --black: #212121;
+            --orange: #f5793a;
+            --blue: #85c0f9;
+            --purple: #c678dd;
+            --header-height: 65px;
+            --board-max-width: 500px;
+            --word-list-width: 350px;
+        }
+
+        body {
+            font-family: 'Clear Sans', 'Helvetica Neue', Arial, sans-serif;
+            background: #121213;
+            color: var(--white);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: var(--header-height);
+            border-bottom: 1px solid #3a3a3c;
+            padding: 0 16px;
+        }
+
+        .header-title {
+            font-size: 32px;
+            font-weight: 700;
+            letter-spacing: 0.01em;
+            text-align: center;
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .header-buttons {
+            display: flex;
+            gap: 8px;
+            margin-left: auto;
+        }
+
+        .icon-button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--white);
+            padding: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: background 0.2s;
+        }
+
+        .icon-button:hover {
+            background: #3a3a3c;
+        }
+
+        /* Category Selector */
+        .category-selector {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            padding: 16px;
+            background: #1a1a1b;
+            border-bottom: 1px solid #3a3a3c;
+            flex-wrap: wrap;
+        }
+
+        .category-btn {
+            padding: 8px 16px;
+            background: #3a3a3c;
+            color: var(--white);
+            border: 2px solid transparent;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: capitalize;
+        }
+
+        .category-btn:hover {
+            background: #565758;
+        }
+
+        .category-btn.active {
+            background: var(--purple);
+            border-color: var(--purple);
+        }
+
+        .category-btn.random {
+            background: linear-gradient(45deg, var(--purple), var(--blue), var(--green));
+            position: relative;
+            overflow: hidden;
+        }
+
+        .category-btn.random:before {
+            content: '🎲';
+            margin-right: 4px;
+        }
+
+        /* Daily Limit Styles */
+        .limit-message {
+            text-align: center;
+            background: #1a1a1b;
+            border: 2px solid var(--orange);
+            border-radius: 12px;
+            padding: 24px;
+            margin: 0 auto 16px;
+            max-width: 500px;
+        }
+
+        .limit-message h3 {
+            color: var(--orange);
+            font-size: 20px;
+            margin-bottom: 12px;
+        }
+
+        .limit-message p {
+            color: var(--lightgray);
+            margin-bottom: 16px;
+            line-height: 1.5;
+        }
+
+        .countdown {
+            background: #3a3a3c;
+            padding: 12px;
+            border-radius: 8px;
+            font-weight: 600;
+            color: var(--white);
+        }
+
+        .countdown span {
+            color: var(--orange);
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        .remaining-message {
+            text-align: center;
+            background: linear-gradient(45deg, var(--green), var(--blue));
+            border-radius: 8px;
+            padding: 8px 16px;
+            margin-bottom: 12px;
+        }
+
+        .remaining-message p {
+            color: var(--white);
+            font-weight: 600;
+            margin: 0;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+        }
+
+        /* Hide category selector panel as requested */
+        .category-selector { display: none; }
+
+        /* Daily info banner above the grid */
+        .daily-info {
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 10px 14px;
+            border-radius: 10px;
+            background: linear-gradient(45deg, var(--green), var(--blue));
+            color: var(--white);
+            font-weight: 700;
+            text-align: center;
+        }
+
+        .daily-info.limit {
+            background: #1a1a1b;
+            border: 2px solid var(--orange);
+            color: var(--white);
+        }
+
+        /* Game Container */
+        .game-container {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 24px 8px;
+            gap: 48px;
+            overflow-y: auto;
+        }
+
+        /* Grid */
+        .grid-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .puzzle-grid {
+            display: grid;
+            gap: 4px;
+            padding: 10px;
+            background: #1a1a1b;
+            border-radius: 8px;
+        }
+
+        .cell {
+            width: 38px;
+            height: 38px;
+            border: 2px solid #3a3a3c;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.2s;
+            background: #121213;
+            position: relative;
+        }
+
+        .cell:hover:not(.found) {
+            border-color: #565758;
+            transform: scale(1.05);
+        }
+
+        .cell.selecting {
+            background: #3a3a3c;
+            border-color: var(--blue);
+            animation: pulse 0.3s;
+        }
+
+        .cell.found {
+            background: var(--green);
+            border-color: var(--green);
+            animation: flip 0.6s;
+        }
+
+        .cell.mystery {
+            animation: glow 2s infinite;
+            background: linear-gradient(45deg, var(--orange), var(--yellow));
+            border-color: var(--orange);
+        }
+
+        @keyframes flip {
+            0% { transform: rotateX(0); }
+            50% { transform: rotateX(90deg); }
+            100% { transform: rotateX(0); }
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes glow {
+            0%, 100% { box-shadow: 0 0 5px rgba(245, 121, 58, 0.5); }
+            50% { box-shadow: 0 0 20px rgba(245, 121, 58, 0.8); }
+        }
+
+        /* Word List */
+        .word-panel {
+            background: #1a1a1b;
+            border-radius: 8px;
+            padding: 20px;
+            min-width: 300px;
+            max-width: 350px;
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .word-panel h2 {
+            font-size: 16px;
+            color: var(--lightgray);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .category-badge {
+            padding: 4px 12px;
+            background: var(--purple);
+            color: var(--white);
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: capitalize;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #3a3a3c;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--green);
+            transition: width 0.3s;
+            border-radius: 4px;
+        }
+
+        .word-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 8px;
+            max-height: 400px;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+
+        .word-grid::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .word-grid::-webkit-scrollbar-track {
+            background: #3a3a3c;
+            border-radius: 2px;
+        }
+
+        .word-grid::-webkit-scrollbar-thumb {
+            background: #565758;
+            border-radius: 2px;
+        }
+
+        .word-item {
+            padding: 8px 12px;
+            background: #3a3a3c;
+            border-radius: 4px;
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 0.03em;
+            transition: all 0.3s;
+            cursor: default;
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .word-item.found {
+            background: var(--green);
+            animation: wordFound 0.6s;
+            text-decoration: line-through;
+        }
+
+        .word-item:not(.found):hover {
+            background: #565758;
+            transform: translateY(-2px);
+        }
+
+        @keyframes wordFound {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        /* Mystery Word */
+        .mystery-container {
+            text-align: center;
+            margin-top: 24px;
+            padding-top: 20px;
+            border-top: 1px solid #3a3a3c;
+        }
+
+        .mystery-container.hidden {
+            display: none;
+        }
+
+        .mystery-label {
+            font-size: 14px;
+            color: var(--gray);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .mystery-word {
+            font-size: 22px;
+            font-weight: 700;
+            background: linear-gradient(45deg, var(--orange), var(--yellow));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: shimmer 3s infinite;
+        }
+
+        @keyframes shimmer {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
+        }
+
+        /* Controls */
+        .controls {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            background: var(--green);
+            color: var(--white);
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .btn:hover {
+            background: var(--darkgreen);
+            transform: translateY(-2px);
+        }
+
+        .btn.secondary {
+            background: #3a3a3c;
+        }
+
+        .btn.secondary:hover {
+            background: #565758;
+        }
+
+        /* Difficulty Badge */
+        .difficulty-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-left: 8px;
+        }
+
+        .difficulty-easy {
+            background: var(--green);
+        }
+
+        .difficulty-medium {
+            background: var(--yellow);
+        }
+
+        .difficulty-hard {
+            background: var(--orange);
+        }
+
+        /* Modal */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        .modal.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-content {
+            background: #1a1a1b;
+            padding: 32px;
+            border-radius: 8px;
+            max-width: 450px;
+            text-align: center;
+            transform: scale(0.9);
+            transition: transform 0.3s;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal.active .modal-content {
+            transform: scale(1);
+        }
+
+        .modal h2 {
+            font-size: 24px;
+            margin-bottom: 16px;
+            color: var(--green);
+        }
+
+        .modal p {
+            color: var(--lightgray);
+            margin-bottom: 24px;
+            line-height: 1.6;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin: 24px 0;
+            padding: 16px;
+            background: #121213;
+            border-radius: 4px;
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 36px;
+            font-weight: 700;
+            color: var(--white);
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: var(--gray);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        /* Instructions */
+        .instructions {
+            background: #1a1a1b;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            max-width: 600px;
+            text-align: center;
+        }
+
+        .instructions h3 {
+            font-size: 16px;
+            margin-bottom: 8px;
+            color: var(--white);
+        }
+
+        .instructions p {
+            color: var(--lightgray);
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .game-container {
+                flex-direction: column;
+                align-items: center;
+                gap: 24px;
+                padding: 16px;
+            }
+
+            .cell {
+                width: 28px;
+                height: 28px;
+                font-size: 14px;
+            }
+
+            .header-title {
+                font-size: 24px;
+            }
+
+            .word-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .category-selector {
+                padding: 12px 8px;
+            }
+
+            .category-btn {
+                font-size: 12px;
+                padding: 6px 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-title">BIBLE WORD WEAVER</div>
+        
+        <div class="header-buttons">
+            <button class="icon-button" onclick="showHelp()">
+                <svg width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z"/>
+                </svg>
+            </button>
+            <button class="icon-button" onclick="showStats()">
+                <svg width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M16 11V3H8v6H2v12h20V11h-6zm-6-6h4v14h-4V5zm-6 6h4v8H4v-8zm16 8h-4v-6h4v6z"/>
+                </svg>
+            </button>
+        </div>
+    </header>
+
+    <!-- Category Selector -->
+    <div class="category-selector" id="categorySelector">
+        <!-- Categories will be generated here -->
+    </div>
+
+    <!-- Game Container -->
+    <div class="game-container">
+        <!-- Daily Info Banner -->
+        <div id="dailyInfo" class="daily-info" style="display:none"></div>
+        <!-- Grid -->
+        <div class="grid-container">
+            <div class="instructions">
+                <h3 id="categoryTitle">🎯 Find the Hidden Words</h3>
+                <p id="categoryDescription">Click and drag to select words. They can be horizontal, vertical, or diagonal!</p>
+            </div>
+            <div id="puzzleGrid" class="puzzle-grid"></div>
+            <div class="controls">
+                <button class="btn" onclick="game.createNewPuzzle()">New Puzzle</button>
+                <button class="btn secondary" onclick="game.showHint()">Hint</button>
+            </div>
+        </div>
+
+        <!-- Word Panel -->
+        <div class="word-panel">
+            <div class="panel-header">
+                <h2>Words to Find</h2>
+                <div id="categoryBadge" class="category-badge"></div>
+            </div>
+            <div class="progress-bar">
+                <div id="progressFill" class="progress-fill" style="width: 0%"></div>
+            </div>
+            <div id="wordList" class="word-grid"></div>
+            
+            <div id="mysteryContainer" class="mystery-container hidden">
+                <div class="mystery-label">Mystery Phrase</div>
+                <div id="mysteryWord" class="mystery-word"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Victory Modal -->
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <h2 id="modalTitle">🎉 Congratulations!</h2>
+            <p id="modalMessage">You found all the words!</p>
+            <div id="modalStats" class="stats hidden">
+                <div class="stat">
+                    <div class="stat-value" id="statTime">0:00</div>
+                    <div class="stat-label">Time</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value" id="statMoves">0</div>
+                    <div class="stat-label">Selections</div>
+                </div>
+            </div>
+            <button class="btn" onclick="closeModal()">Play Again</button>
+        </div>
+    </div>
+
+    <script>
+        // Biblical Database
+        const BiblicalDatabase = {
+            categories: {
+                oldTestament: {
+                    name: "Old Testament Books",
+                    description: "Find the selected books from the Old Testament",
+                    difficulty: "medium",
+                    words: [
+                        "GENESIS", "EXODUS", "LEVITICUS", "NUMBERS", "DEUTERONOMY",
+                        "JOSHUA", "JUDGES", "RUTH", "SAMUEL", "KINGS", 
+                        "CHRONICLES", "EZRA", "NEHEMIAH", "ESTHER", "JOB", 
+                        "PSALMS", "PROVERBS", "ISAIAH", "JEREMIAH", "DANIEL"
+                    ],
+                    mysteryPhrases: ["HOLY SCRIPTURE", "ANCIENT WISDOM", "GODS COVENANT", "TORAH AND MORE"]
+                },
+                newTestament: {
+                    name: "New Testament Books",
+                    description: "Find books from the New Testament",
+                    difficulty: "medium",
+                    words: [
+                        "MATTHEW", "MARK", "LUKE", "JOHN", "ACTS",
+                        "ROMANS", "CORINTHIANS", "GALATIANS", "EPHESIANS", "PHILIPPIANS",
+                        "COLOSSIANS", "TIMOTHY", "TITUS", "PHILEMON", "HEBREWS",
+                        "JAMES", "PETER", "JUDE", "REVELATION"
+                    ],
+                    mysteryPhrases: ["GOSPEL TRUTH", "JESUS SAVES", "NEW COVENANT", "APOSTOLIC WORD"]
+                },
+                prophets: {
+                    name: "Prophets",
+                    description: "Find the names of biblical prophets",
+                    difficulty: "medium",
+                    words: [
+                        "ISAIAH", "JEREMIAH", "EZEKIEL", "DANIEL", "HOSEA",
+                        "JOEL", "AMOS", "OBADIAH", "JONAH", "MICAH",
+                        "NAHUM", "HABAKKUK", "ZEPHANIAH", "HAGGAI", "ZECHARIAH",
+                        "MALACHI", "ELIJAH", "ELISHA", "SAMUEL", "NATHAN"
+                    ],
+                    mysteryPhrases: ["GODS VOICE", "DIVINE MESSAGE", "HOLY PROPHETS", "SPEAK TRUTH"]
+                },
+                kings: {
+                    name: "Kings & Queens",
+                    description: "Find biblical kings and queens",
+                    difficulty: "easy",
+                    words: [
+                        "DAVID", "SOLOMON", "SAUL", "HEZEKIAH", "JOSIAH",
+                        "ASA", "JEHOSHAPHAT", "REHOBOAM", "JEROBOAM", "AHAB",
+                        "JEZEBEL", "ESTHER", "SHEBA", "BATHSHEBA", "VASHTI"
+                    ],
+                    mysteryPhrases: ["ROYAL LINE", "THRONE OF DAVID", "KINGDOM REIGN", "CROWN JEWEL"]
+                },
+                disciples: {
+                    name: "Jesus' Disciples",
+                    description: "Find the names of Jesus' disciples",
+                    difficulty: "easy",
+                    words: [
+                        "PETER", "ANDREW", "JAMES", "JOHN", "PHILIP",
+                        "BARTHOLOMEW", "MATTHEW", "THOMAS", "JAMES", "SIMON",
+                        "JUDAS", "THADDEUS", "MATTHIAS", "PAUL"
+                    ],
+                    mysteryPhrases: ["TWELVE CHOSEN", "FOLLOW JESUS", "APOSTLES", "FISHERS OF MEN"]
+                },
+                women: {
+                    name: "Women of the Bible",
+                    description: "Find important women from scripture",
+                    difficulty: "easy",
+                    words: [
+                        "MARY", "MARTHA", "RUTH", "NAOMI", "ESTHER",
+                        "SARAH", "REBEKAH", "RACHEL", "LEAH", "MIRIAM",
+                        "DEBORAH", "HANNAH", "ABIGAIL", "EVE", "ELIZABETH"
+                    ],
+                    mysteryPhrases: ["FAITHFUL WOMEN", "GODS DAUGHTERS", "BLESSED MOTHERS", "HOLY WOMEN"]
+                },
+                places: {
+                    name: "Biblical Places",
+                    description: "Find important locations from the Bible",
+                    difficulty: "hard",
+                    words: [
+                        "JERUSALEM", "BETHLEHEM", "NAZARETH", "JERICHO", "BABYLON",
+                        "EGYPT", "CANAAN", "GALILEE", "SAMARIA", "DAMASCUS",
+                        "ROME", "CORINTH", "EPHESUS", "ANTIOCH", "NINEVEH",
+                        "SODOM", "GOMORRAH", "EDEN", "SINAI", "JORDAN"
+                    ],
+                    mysteryPhrases: ["HOLY LANDS", "SACRED GROUND", "PROMISED LAND", "ANCIENT CITIES"]
+                },
+                parables: {
+                    name: "Parables & Stories",
+                    description: "Find famous biblical parables and stories",
+                    difficulty: "hard",
+                    words: [
+                        "SOWER", "PRODIGAL", "SAMARITAN", "TALENTS", "PEARLS",
+                        "MUSTARD", "LEAVEN", "SHEPHERD", "VINEYARD", "WEDDING",
+                        "VIRGINS", "TREASURE", "DRAGNET", "WHEAT", "TARES"
+                    ],
+                    mysteryPhrases: ["JESUS TEACHES", "KINGDOM STORIES", "WISE WORDS", "TRUTH TOLD"]
+                },
+                virtues: {
+                    name: "Fruits of the Spirit",
+                    description: "Find biblical virtues and fruits of the spirit",
+                    difficulty: "easy",
+                    words: [
+                        "LOVE", "JOY", "PEACE", "PATIENCE", "KINDNESS",
+                        "GOODNESS", "FAITHFULNESS", "GENTLENESS", "FAITH", "HOPE",
+                        "CHARITY", "WISDOM", "COURAGE", "JUSTICE", "MERCY"
+                    ],
+                    mysteryPhrases: ["HOLY SPIRIT", "GODS FRUITS", "BE BLESSED", "WALK IN LOVE"]
+                },
+                angels: {
+                    name: "Angels & Heavenly Beings",
+                    description: "Find angels and heavenly beings",
+                    difficulty: "medium",
+                    words: [
+                        "MICHAEL", "GABRIEL", "RAPHAEL", "URIEL", "CHERUBIM",
+                        "SERAPHIM", "ARCHANGEL", "LUCIFER", "SATAN", "MESSENGER",
+                        "GUARDIAN", "THRONE", "DOMINION", "POWER", "PRINCIPALITY"
+                    ],
+                    mysteryPhrases: ["HEAVENLY HOST", "ANGEL CHOIR", "GODS ARMY", "DIVINE BEINGS"]
+                },
+                miracles: {
+                    name: "Miracles",
+                    description: "Find words related to biblical miracles",
+                    difficulty: "medium",
+                    words: [
+                        "WATER", "WINE", "LOAVES", "FISHES", "HEALING",
+                        "BLIND", "LAME", "LEPER", "LAZARUS", "STORM",
+                        "WALKING", "RESURRECTION", "MANNA", "QUAIL", "PLAGUE"
+                    ],
+                    mysteryPhrases: ["GODS POWER", "WONDERS DONE", "SIGNS SHOWN", "MIGHTY WORKS"]
+                },
+                psalms: {
+                    name: "Psalms & Worship",
+                    description: "Find words commonly found in Psalms",
+                    difficulty: "easy",
+                    words: [
+                        "PRAISE", "WORSHIP", "GLORY", "HALLELUJAH", "BLESSING",
+                        "MERCY", "GRACE", "SHEPHERD", "REFUGE", "FORTRESS",
+                        "ROCK", "SHIELD", "STRENGTH", "SALVATION", "REJOICE"
+                    ],
+                    mysteryPhrases: ["SING PRAISE", "WORSHIP GOD", "HOLY HOLY", "BLESS LORD"]
+                }
+            },
+            
+            getRandomCategory() {
+                const keys = Object.keys(this.categories);
+                const randomKey = keys[Math.floor(Math.random() * keys.length)];
+                return randomKey;
+            },
+            
+            getMixedCategory() {
+                // Mix words from multiple categories
+                const allWords = [];
+                const numCategories = 3;
+                const wordsPerCategory = 7;
+                const selectedCategories = [];
+                
+                const keys = Object.keys(this.categories);
+                for (let i = 0; i < numCategories; i++) {
+                    const randomKey = keys[Math.floor(Math.random() * keys.length)];
+                    if (!selectedCategories.includes(randomKey)) {
+                        selectedCategories.push(randomKey);
+                        const categoryWords = this.categories[randomKey].words;
+                        const shuffled = [...categoryWords].sort(() => Math.random() - 0.5);
+                        allWords.push(...shuffled.slice(0, wordsPerCategory));
+                    }
+                }
+                
+                return {
+                    name: "Mixed Challenge",
+                    description: "A mix of words from different categories",
+                    difficulty: "hard",
+                    words: allWords.slice(0, 12),
+                    mysteryPhrases: ["BIBLE MASTER", "WORD SCHOLAR", "SCRIPTURE PRO", "HOLY WISDOM"]
+                };
+            }
+        };
+
+        class WordSearchGame {
+            constructor() {
+                this.currentCategory = 'oldTestament';
+                this.words = [];
+                this.mysteryPhrase = "";
+                this.gridSize = 12;
+                this.grid = [];
+                this.foundWords = new Set();
+                this.mysteryWordCells = [];
+                this.selection = [];
+                this.isDragging = false;
+                this.startTime = null;
+                this.moves = 0;
+                this.dailyLimit = 2;
+                
+                this.directions = [
+                    [0, 1], [1, 0], [1, 1], [1, -1],
+                    [0, -1], [-1, 0], [-1, -1], [-1, 1]
+                ];
+                
+                this.init();
+            }
+            
+            init() {
+                this.checkDailyLimit();
+                this.renderDailyInfoBanner();
+                this.renderCategorySelector();
+                this.loadCategory('oldTestament');
+                this.createNewPuzzle();
+                this.setupEventListeners();
+            }
+            
+            renderDailyInfoBanner() {
+                const banner = document.getElementById('dailyInfo');
+                if (!banner) return;
+                const dailyData = this.getDailyGameData();
+                const remaining = Math.max(0, this.dailyLimit - dailyData.gamesPlayed);
+                if (remaining > 0) {
+                    banner.className = 'daily-info';
+                    banner.textContent = `🎮 ${remaining} game${remaining === 1 ? '' : 's'} remaining today`;
+                    banner.style.display = 'block';
+                } else {
+                    banner.className = 'daily-info limit';
+                    banner.innerHTML = `🎯 Daily limit reached • Resets in <span id="dailyCountdown"></span>`;
+                    banner.style.display = 'block';
+                    this.startCountdown('dailyCountdown');
+                }
+            }
+            
+            renderCategorySelector() {
+                const selector = document.getElementById('categorySelector');
+                selector.innerHTML = '';
+                
+                const dailyData = this.getDailyGameData();
+                const isLimitReached = dailyData.gamesPlayed >= this.dailyLimit;
+                
+                if (isLimitReached) {
+                    // Show limit reached message
+                    const limitMessage = document.createElement('div');
+                    limitMessage.className = 'limit-message';
+                    limitMessage.innerHTML = `
+                        <h3>🎯 Daily Limit Reached</h3>
+                        <p>You've played ${this.dailyLimit} games today! Come back tomorrow for more puzzles.</p>
+                        <div class="countdown">Resets in: <span id="countdown"></span></div>
+                    `;
+                    selector.appendChild(limitMessage);
+                    this.startCountdown();
+                    return;
+                }
+                
+                // Show remaining games
+                const remainingGames = this.dailyLimit - dailyData.gamesPlayed;
+                const remainingMessage = document.createElement('div');
+                remainingMessage.className = 'remaining-message';
+                remainingMessage.innerHTML = `<p>🎮 ${remainingGames} game${remainingGames === 1 ? '' : 's'} remaining today</p>`;
+                selector.appendChild(remainingMessage);
+                
+                // Add category buttons
+                Object.keys(BiblicalDatabase.categories).forEach(key => {
+                    const category = BiblicalDatabase.categories[key];
+                    const btn = document.createElement('button');
+                    btn.className = 'category-btn';
+                    btn.textContent = category.name;
+                    btn.onclick = () => this.loadCategory(key);
+                    btn.id = `cat-${key}`;
+                    
+                    // Add difficulty indicator
+                    const badge = document.createElement('span');
+                    badge.className = `difficulty-badge difficulty-${category.difficulty}`;
+                    badge.textContent = category.difficulty;
+                    btn.appendChild(badge);
+                    
+                    selector.appendChild(btn);
+                });
+                
+                // Add random/mixed button
+                const randomBtn = document.createElement('button');
+                randomBtn.className = 'category-btn random';
+                randomBtn.textContent = 'Random Mix';
+                randomBtn.onclick = () => this.loadRandomCategory();
+                selector.appendChild(randomBtn);
+            }
+            
+            loadCategory(categoryKey) {
+                // Update active button
+                document.querySelectorAll('.category-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                const activeBtn = document.getElementById(`cat-${categoryKey}`);
+                if (activeBtn) activeBtn.classList.add('active');
+                
+                // Load category data
+                const category = BiblicalDatabase.categories[categoryKey];
+                this.currentCategory = categoryKey;
+                this.words = [...category.words]
+                    .sort(() => Math.random() - 0.5)
+                    .slice(0, Math.min(12, category.words.length));
+
+                document.getElementById('categoryTitle').textContent = `🎯 ${category.name}`;
+                document.getElementById('categoryDescription').textContent = category.description;
+                const badge = document.getElementById('categoryBadge');
+                badge.textContent = category.difficulty;
+                badge.className = `category-badge difficulty-badge difficulty-${category.difficulty}`;
+
+                const phrases = category.mysteryPhrases && category.mysteryPhrases.length ? category.mysteryPhrases : ["BIBLE GAME"];
+                this.mysteryPhrase = phrases[Math.floor(Math.random() * phrases.length)];
+                document.getElementById('mysteryWord').textContent = this.mysteryPhrase;
+                document.getElementById('mysteryContainer').classList.remove('hidden');
+
+                this.foundWords = new Set();
+                this.createNewPuzzle();
+                this.renderWordList();
+                this.updateProgress();
+            }
+
+            loadRandomCategory() {
+                const mixed = BiblicalDatabase.getMixedCategory();
+                this.currentCategory = 'mixed';
+                this.words = [...mixed.words];
+                document.getElementById('categoryTitle').textContent = `🎯 ${mixed.name}`;
+                document.getElementById('categoryDescription').textContent = mixed.description;
+                const badge = document.getElementById('categoryBadge');
+                badge.textContent = mixed.difficulty;
+                badge.className = `category-badge difficulty-badge difficulty-${mixed.difficulty}`;
+                this.mysteryPhrase = mixed.mysteryPhrases[Math.floor(Math.random() * mixed.mysteryPhrases.length)];
+                document.getElementById('mysteryWord').textContent = this.mysteryPhrase;
+                document.getElementById('mysteryContainer').classList.remove('hidden');
+                this.foundWords = new Set();
+                this.createNewPuzzle();
+                this.renderWordList();
+                this.updateProgress();
+            }
+
+            setupEventListeners() {
+                document.addEventListener('mouseup', () => this.onMouseUp());
+            }
+
+            createNewPuzzle() {
+                this.grid = Array.from({ length: this.gridSize }, () => Array.from({ length: this.gridSize }, () => ''));
+                this.foundWords = new Set();
+                this.moves = 0;
+                this.startTime = Date.now();
+                this.selection = [];
+
+                const shuffledWords = [...this.words].sort(() => Math.random() - 0.5);
+                for (const word of shuffledWords) {
+                    this.tryPlaceWord(word);
+                }
+
+                for (let r = 0; r < this.gridSize; r++) {
+                    for (let c = 0; c < this.gridSize; c++) {
+                        if (!this.grid[r][c]) {
+                            this.grid[r][c] = String.fromCharCode(65 + Math.floor(Math.random() * 26));
+                        }
+                    }
+                }
+
+                this.renderGrid();
+                this.renderWordList();
+                this.updateProgress();
+                this.renderDailyInfoBanner();
+            }
+
+            tryPlaceWord(word) {
+                const maxAttempts = 200;
+                for (let attempt = 0; attempt < maxAttempts; attempt++) {
+                    const [dr, dc] = this.directions[Math.floor(Math.random() * this.directions.length)];
+                    const startRow = Math.floor(Math.random() * this.gridSize);
+                    const startCol = Math.floor(Math.random() * this.gridSize);
+                    if (this.canPlace(startRow, startCol, dr, dc, word)) {
+                        this.placeWord(startRow, startCol, dr, dc, word);
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            canPlace(row, col, dr, dc, word) {
+                let r = row;
+                let c = col;
+                for (let i = 0; i < word.length; i++) {
+                    if (r < 0 || c < 0 || r >= this.gridSize || c >= this.gridSize) return false;
+                    const existing = this.grid[r][c];
+                    if (existing && existing !== word[i]) return false;
+                    r += dr;
+                    c += dc;
+                }
+                return true;
+            }
+
+            placeWord(row, col, dr, dc, word) {
+                let r = row;
+                let c = col;
+                for (let i = 0; i < word.length; i++) {
+                    this.grid[r][c] = word[i];
+                    r += dr;
+                    c += dc;
+                }
+            }
+
+            renderGrid() {
+                const gridEl = document.getElementById('puzzleGrid');
+                gridEl.innerHTML = '';
+                gridEl.style.gridTemplateColumns = `repeat(${this.gridSize}, 38px)`;
+
+                for (let r = 0; r < this.gridSize; r++) {
+                    for (let c = 0; c < this.gridSize; c++) {
+                        const cell = document.createElement('div');
+                        cell.className = 'cell';
+                        cell.textContent = this.grid[r][c];
+                        cell.dataset.r = String(r);
+                        cell.dataset.c = String(c);
+                        cell.addEventListener('mousedown', (e) => this.onCellMouseDown(e));
+                        cell.addEventListener('mouseenter', (e) => this.onCellMouseEnter(e));
+                        gridEl.appendChild(cell);
+                    }
+                }
+            }
+
+            renderWordList() {
+                const listEl = document.getElementById('wordList');
+                listEl.innerHTML = '';
+                this.words.forEach(w => {
+                    const item = document.createElement('div');
+                    item.className = 'word-item';
+                    item.id = `word-${w}`;
+                    item.textContent = w;
+                    listEl.appendChild(item);
+                });
+            }
+
+            updateProgress() {
+                const fill = document.getElementById('progressFill');
+                const percent = this.words.length === 0 ? 0 : Math.round((this.foundWords.size / this.words.length) * 100);
+                fill.style.width = `${percent}%`;
+            }
+
+            onCellMouseDown(e) {
+                this.isDragging = true;
+                this.selection = [];
+                const cell = e.currentTarget;
+                this.selectionStart = { r: Number(cell.dataset.r), c: Number(cell.dataset.c) };
+                cell.classList.add('selecting');
+                this.selection.push(cell);
+            }
+
+            onCellMouseEnter(e) {
+                if (!this.isDragging || !this.selectionStart) return;
+                const cell = e.currentTarget;
+                const end = { r: Number(cell.dataset.r), c: Number(cell.dataset.c) };
+                const start = this.selectionStart;
+
+                const dr = Math.sign(end.r - start.r);
+                const dc = Math.sign(end.c - start.c);
+                const isStraight = (dr === 0 && dc !== 0) || (dr !== 0 && dc === 0) || (dr !== 0 && dc !== 0 && Math.abs(end.r - start.r) === Math.abs(end.c - start.c));
+                if (!isStraight) return;
+
+                for (const el of this.selection) el.classList.remove('selecting');
+                this.selection = [];
+
+                let r = start.r;
+                let c = start.c;
+                while (true) {
+                    const index = r * this.gridSize + c;
+                    const gridEl = document.getElementById('puzzleGrid');
+                    const selCell = gridEl.children[index];
+                    if (!selCell) break;
+                    selCell.classList.add('selecting');
+                    this.selection.push(selCell);
+                    if (r === end.r && c === end.c) break;
+                    r += dr;
+                    c += dc;
+                }
+            }
+
+            onMouseUp() {
+                if (!this.isDragging) return;
+                this.isDragging = false;
+                if (this.selection.length < 2) {
+                    for (const el of this.selection) el.classList.remove('selecting');
+                    this.selection = [];
+                    return;
+                }
+
+                const letters = this.selection.map(el => el.textContent).join('');
+                const reversed = letters.split('').reverse().join('');
+                let matched = null;
+                if (this.words.includes(letters)) matched = letters;
+                else if (this.words.includes(reversed)) matched = reversed;
+
+                if (matched && !this.foundWords.has(matched)) {
+                    this.foundWords.add(matched);
+                    for (const el of this.selection) {
+                        el.classList.remove('selecting');
+                        el.classList.add('found');
+                    }
+                    const item = document.getElementById(`word-${matched}`);
+                    if (item) item.classList.add('found');
+                    this.updateProgress();
+                    if (this.foundWords.size === this.words.length) this.onWin();
+                } else {
+                    for (const el of this.selection) el.classList.remove('selecting');
+                }
+                this.selection = [];
+                this.moves += 1;
+            }
+
+            onWin() {
+                // Increment daily game count
+                this.incrementDailyGameCount();
+                
+                const modal = document.getElementById('modal');
+                document.getElementById('modalTitle').textContent = '🎉 Congratulations!';
+                document.getElementById('modalMessage').textContent = 'You found all the words!';
+                const elapsedMs = Date.now() - (this.startTime || Date.now());
+                const minutes = Math.floor(elapsedMs / 60000);
+                const seconds = Math.floor((elapsedMs % 60000) / 1000).toString().padStart(2, '0');
+                document.getElementById('statTime').textContent = `${minutes}:${seconds}`;
+                document.getElementById('statMoves').textContent = String(this.moves);
+                modal.classList.add('active');
+                
+                // Update category selector to reflect new game count
+                setTimeout(() => {
+                    this.renderCategorySelector();
+                    this.renderDailyInfoBanner();
+                }, 2000);
+            }
+
+            showHint() {
+                const remaining = this.words.filter(w => !this.foundWords.has(w));
+                if (remaining.length === 0) return;
+                const target = remaining[Math.floor(Math.random() * remaining.length)];
+                const first = target[0];
+                const gridEl = document.getElementById('puzzleGrid');
+                const candidates = [];
+                for (let i = 0; i < gridEl.children.length; i++) {
+                    const el = gridEl.children[i];
+                    if (el.textContent === first && !el.classList.contains('found')) candidates.push(el);
+                }
+                if (candidates.length) {
+                    const el = candidates[Math.floor(Math.random() * candidates.length)];
+                    el.classList.add('mystery');
+                    setTimeout(() => el.classList.remove('mystery'), 800);
+                }
+            }
+
+            // Daily limit methods
+            checkDailyLimit() {
+                const dailyData = this.getDailyGameData();
+                if (dailyData.gamesPlayed >= this.dailyLimit) {
+                    this.disableGameplay();
+                }
+            }
+
+            getDailyGameData() {
+                const today = new Date().toDateString();
+                const stored = localStorage.getItem('biblicalWordWeaverDaily');
+                
+                if (stored) {
+                    const data = JSON.parse(stored);
+                    if (data.date === today) {
+                        return data;
+                    }
+                }
+                
+                // Reset for new day
+                const newData = { date: today, gamesPlayed: 0 };
+                localStorage.setItem('biblicalWordWeaverDaily', JSON.stringify(newData));
+                return newData;
+            }
+
+            incrementDailyGameCount() {
+                const dailyData = this.getDailyGameData();
+                dailyData.gamesPlayed++;
+                localStorage.setItem('biblicalWordWeaverDaily', JSON.stringify(dailyData));
+            }
+
+            disableGameplay() {
+                const gridEl = document.getElementById('puzzleGrid');
+                const newPuzzleBtn = document.querySelector('.controls .btn');
+                const hintBtn = document.querySelector('.controls .btn.secondary');
+                
+                if (gridEl) gridEl.style.pointerEvents = 'none';
+                if (newPuzzleBtn) newPuzzleBtn.disabled = true;
+                if (hintBtn) hintBtn.disabled = true;
+            }
+
+            startCountdown(elementId = 'countdown') {
+                const countdownEl = document.getElementById(elementId);
+                if (!countdownEl) return;
+
+                const updateCountdown = () => {
+                    const now = new Date();
+                    const tomorrow = new Date(now);
+                    tomorrow.setDate(tomorrow.getDate() + 1);
+                    tomorrow.setHours(0, 0, 0, 0);
+                    
+                    const timeLeft = tomorrow - now;
+                    const hours = Math.floor(timeLeft / (1000 * 60 * 60));
+                    const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+                    const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+                    
+                    countdownEl.textContent = `${hours}h ${minutes}m ${seconds}s`;
+                    
+                    if (timeLeft <= 0) {
+                        location.reload();
+                    }
+                };
+
+                updateCountdown();
+                setInterval(updateCountdown, 1000);
+            }
+        }
+
+        function showHelp() {
+            alert('Click and drag to select words on the grid. Words can be horizontal, vertical, or diagonal.');
+        }
+
+        function showStats() {
+            alert('Stats appear after finishing a puzzle.');
+        }
+
+        function closeModal() {
+            document.getElementById('modal').classList.remove('active');
+            const dailyData = game.getDailyGameData();
+            if (dailyData.gamesPlayed < game.dailyLimit) {
+                game.createNewPuzzle();
+            }
+        }
+
+        const game = new WordSearchGame();
+    </script>
+</body>
+</html>
