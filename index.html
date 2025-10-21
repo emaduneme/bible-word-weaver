@@ -225,6 +225,8 @@
             padding: 10px;
             background: #1a1a1b;
             border-radius: 8px;
+            width: 100%;
+            max-width: 480px; /* stabilize width on mobile */
         }
 
         .cell {
@@ -241,23 +243,24 @@
             transition: all 0.2s;
             background: #121213;
             position: relative;
+            touch-action: manipulation; /* improve mobile interactions */
         }
 
         .cell:hover:not(.found) {
             border-color: #565758;
-            transform: scale(1.05);
+            transform: none;
         }
 
         .cell.selecting {
             background: #3a3a3c;
             border-color: var(--blue);
-            animation: pulse 0.3s;
+            animation: none;
         }
 
         .cell.found {
             background: var(--green);
             border-color: var(--green);
-            animation: flip 0.6s;
+            animation: none;
         }
 
         .cell.mystery {
@@ -608,6 +611,23 @@
             .category-btn {
                 font-size: 12px;
                 padding: 6px 12px;
+            }
+
+            .word-panel {
+                min-width: 0;
+                width: 100%;
+                max-width: 520px;
+            }
+
+            /* reduce motion/animations on small screens for stability */
+            .cell:hover:not(.found) {
+                transform: none;
+            }
+            .cell.selecting {
+                animation: none;
+            }
+            .cell.found {
+                animation: none;
             }
         }
     </style>
@@ -1018,7 +1038,15 @@
 
             setupEventListeners() {
                 document.addEventListener('mouseup', () => this.onMouseUp());
-                window.addEventListener('resize', () => this.updateGridSizing());
+                let resizeTimeout = null;
+                let lastWidth = window.innerWidth;
+                window.addEventListener('resize', () => {
+                    const current = window.innerWidth;
+                    if (Math.abs(current - lastWidth) < 8) return; // ignore tiny changes
+                    lastWidth = current;
+                    if (resizeTimeout) clearTimeout(resizeTimeout);
+                    resizeTimeout = setTimeout(() => this.updateGridSizing(), 120);
+                });
             }
 
             createNewPuzzle() {
