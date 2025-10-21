@@ -871,7 +871,7 @@
                 this.currentCategory = 'oldTestament';
                 this.words = [];
                 this.mysteryPhrase = "";
-                this.gridSize = 12;
+                this.gridSize = (window.innerWidth <= 420) ? 10 : 12;
                 this.grid = [];
                 this.foundWords = new Set();
                 this.mysteryWordCells = [];
@@ -904,9 +904,8 @@
                 const dailyData = this.getDailyGameData();
                 const remaining = Math.max(0, this.dailyLimit - dailyData.gamesPlayed);
                 if (remaining > 0) {
-                    banner.className = 'daily-info';
-                    banner.textContent = `🎮 ${remaining} game${remaining === 1 ? '' : 's'} remaining today`;
-                    banner.style.display = 'block';
+                    banner.style.display = 'none';
+                    banner.textContent = '';
                 } else {
                     banner.className = 'daily-info limit';
                     banner.innerHTML = `🎯 Daily limit reached • Resets in <span id="dailyCountdown"></span>`;
@@ -937,11 +936,7 @@
                 }
                 
                 // Show remaining games
-                const remainingGames = this.dailyLimit - dailyData.gamesPlayed;
-                const remainingMessage = document.createElement('div');
-                remainingMessage.className = 'remaining-message';
-                remainingMessage.innerHTML = `<p>🎮 ${remainingGames} game${remainingGames === 1 ? '' : 's'} remaining today</p>`;
-                selector.appendChild(remainingMessage);
+                // Removed remaining-games banner as requested
                 
                 // Add category buttons
                 Object.keys(BiblicalDatabase.categories).forEach(key => {
@@ -980,9 +975,11 @@
                 // Load category data
                 const category = BiblicalDatabase.categories[categoryKey];
                 this.currentCategory = categoryKey;
-                this.words = [...category.words]
+                const maxLen = this.gridSize;
+                const filtered = [...category.words].filter(w => w.length <= maxLen);
+                this.words = filtered
                     .sort(() => Math.random() - 0.5)
-                    .slice(0, Math.min(12, category.words.length));
+                    .slice(0, Math.min(12, filtered.length));
 
                 document.getElementById('categoryTitle').textContent = `🎯 ${category.name}`;
                 document.getElementById('categoryDescription').textContent = category.description;
@@ -1021,6 +1018,7 @@
 
             setupEventListeners() {
                 document.addEventListener('mouseup', () => this.onMouseUp());
+                window.addEventListener('resize', () => this.updateGridSizing());
             }
 
             createNewPuzzle() {
@@ -1089,7 +1087,15 @@
             renderGrid() {
                 const gridEl = document.getElementById('puzzleGrid');
                 gridEl.innerHTML = '';
-                gridEl.style.gridTemplateColumns = `repeat(${this.gridSize}, 38px)`;
+                const container = gridEl.parentElement;
+                const containerWidth = (container && container.clientWidth) ? container.clientWidth : window.innerWidth;
+                const computedStyles = getComputedStyle(gridEl);
+                const gap = parseInt(computedStyles.gap) || 4;
+                const horizontalPadding = 20; // padding-left + padding-right (10px each)
+                const available = Math.max(0, containerWidth - horizontalPadding);
+                const rawCell = Math.floor((available - (this.gridSize - 1) * gap) / this.gridSize);
+                const cellSize = Math.max(22, Math.min(38, rawCell));
+                gridEl.style.gridTemplateColumns = `repeat(${this.gridSize}, ${cellSize}px)`;
 
                 for (let r = 0; r < this.gridSize; r++) {
                     for (let c = 0; c < this.gridSize; c++) {
@@ -1098,6 +1104,9 @@
                         cell.textContent = this.grid[r][c];
                         cell.dataset.r = String(r);
                         cell.dataset.c = String(c);
+                        cell.style.width = `${cellSize}px`;
+                        cell.style.height = `${cellSize}px`;
+                        cell.style.fontSize = `${Math.max(12, Math.floor(cellSize * 0.45))}px`;
                         cell.addEventListener('mousedown', (e) => this.onCellMouseDown(e));
                         cell.addEventListener('mouseenter', (e) => this.onCellMouseEnter(e));
                         gridEl.appendChild(cell);
@@ -1130,6 +1139,27 @@
                 this.selectionStart = { r: Number(cell.dataset.r), c: Number(cell.dataset.c) };
                 cell.classList.add('selecting');
                 this.selection.push(cell);
+            }
+
+            // Recompute cell sizing on viewport changes without regenerating the puzzle
+            updateGridSizing() {
+                const gridEl = document.getElementById('puzzleGrid');
+                if (!gridEl) return;
+                const container = gridEl.parentElement;
+                const containerWidth = (container && container.clientWidth) ? container.clientWidth : window.innerWidth;
+                const computedStyles = getComputedStyle(gridEl);
+                const gap = parseInt(computedStyles.gap) || 4;
+                const horizontalPadding = 20;
+                const available = Math.max(0, containerWidth - horizontalPadding);
+                const rawCell = Math.floor((available - (this.gridSize - 1) * gap) / this.gridSize);
+                const cellSize = Math.max(22, Math.min(38, rawCell));
+                gridEl.style.gridTemplateColumns = `repeat(${this.gridSize}, ${cellSize}px)`;
+                for (let i = 0; i < gridEl.children.length; i++) {
+                    const el = gridEl.children[i];
+                    el.style.width = `${cellSize}px`;
+                    el.style.height = `${cellSize}px`;
+                    el.style.fontSize = `${Math.max(12, Math.floor(cellSize * 0.45))}px`;
+                }
             }
 
             onCellMouseEnter(e) {
