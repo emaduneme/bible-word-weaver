@@ -1,0 +1,47 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: #1a1a1a; /* Dark background */
+}
+#game-grid {
+    /* UPDATED: Fixed 12x12 grid for better mobile experience */
+    grid-template-columns: repeat(12, 1fr);
+}
+.grid-cell {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    /* UPDATED: Adjusted clamp for 12x12 grid */
+    font-size: clamp(0.9rem, 3.5vw, 1.4rem);
+    font-weight: 700;
+    color: #d1d5db; /* Light gray text */
+    cursor: pointer;
+    transition: background-color 0.1s ease;
+    user-select: none;
+}
+.grid-cell:hover:not(.selected):not(.found) {
+    background-color: #2d2d2d;
+}
+.selected {
+    background-color: #4a4a4a;
+    color: white;
+    border-radius: 4px;
+}
+.found {
+    background-color: #34d399; /* Green for found words */
+    color: #1a1a1a;
+    border-radius: 4px;
+    pointer-events: none; /* Disable clicking on found cells */
+    animation: found-flash 0.5s;
+}
+.word-item-found {
+    text-decoration: line-through;
+    opacity: 0.5;
+    background-color: #374151; /* Darker gray for found list items */
+}
+@keyframes found-flash {
+    0% { transform: scale(1.1); opacity: 0.8; }
+    100% { transform: scale(1); opacity: 1; }
+}
